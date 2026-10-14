@@ -19,10 +19,10 @@ It is a pure Home Assistant integration: it uses the entities the ESPHome integr
 
 ## Identity: the Car ID
 
-- Each car must be recognisable across ESP32s without publishing its VIN. The component will expose a diagnostic text sensor **Car ID** per car: the `S<16 hex>C` advert name derived from the VIN.
+- Each car must be recognisable across ESP32s without publishing its VIN. The component exposes a diagnostic text sensor **Car ID** per car: the `S<16 hex>C` advert name derived from the VIN.
 - The car broadcasts that name over Bluetooth anyway, so it reveals nothing new.
 - Cars that advertise the 2023+ `Tesla <last 6>` name still have the hash-based name computed from the VIN, so the Car ID is the same either way.
-- **Needed in the component first** (a small change): a `car_id` text sensor, published at boot.
+- **In the component** since commit a1e548a (multicar-v2): the diagnostic text sensor **Car ID** (`car_id`), published at boot with the discovery state.
 
 ## Picking the ESP32 for a car
 
@@ -53,7 +53,7 @@ Rule: **one active device per key**. Per-key counters would collide if two devic
 
 ## Order
 
-1. Component: `car_id` text sensor.
+1. ~~Component: `car_id` text sensor.~~ Done (esphome-tesla-ble-multi a1e548a).
 2. Fleet: discover ESPHome devices with Car IDs, one fleet device per car, mirrored sensors and **Serving ESP32**.
 3. Routed controls.
 4. Composite media player.
