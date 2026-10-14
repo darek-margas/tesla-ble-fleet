@@ -41,6 +41,16 @@ Shown as a sensor on the fleet car: **Serving ESP32**.
   - one **media player** per car with play/pause, volume, title, artist, source and next/previous;
   - climate including seat and steering heat levels, later.
 
+## Presence and location
+
+The same model as [Wi-Fi Association Presence](https://github.com/darek-margas/wifi-association-presence), with ESP32s instead of access points:
+- **Device tracker per car:** *home* while any ESP32 reports the car **Present**, *not_home* when none does.
+  - Each ESP32 already applies its own grace period (`presence_timeout`, 5 min by default), so turn-taking or a short gap causes no flapping. The fleet combines them; no second grace period by default.
+- **Area sensor:** the Home Assistant area of the ESP32 device that serves the car (same choice as for commands). An ESP32 in area *Garage* puts a car heard best there in the garage. Unknown while away.
+- **Arrived at / departed at** as tracker attributes: a visit continues across gaps shorter than the grace period, as in Wi-Fi Association Presence.
+- Works with Home Assistant persons, zones and "arrived home" automations.
+- **Limit:** Bluetooth range around each ESP32, not GPS. *Away* means out of range of all of them. Best with an ESP32 where the car actually parks.
+
 ## Keys (later, opt-in)
 
 Key provisioning from Home Assistant, so ESP32s are replaceable:
@@ -55,6 +65,7 @@ Rule: **one active device per key**. Per-key counters would collide if two devic
 
 1. ~~Component: `car_id` text sensor.~~ Done (esphome-tesla-ble-multi a1e548a).
 2. Fleet: discover ESPHome devices with Car IDs, one fleet device per car, mirrored sensors and **Serving ESP32**.
-3. Routed controls.
-4. Composite media player.
-5. Key provisioning (component + fleet).
+3. Presence: device tracker, Area sensor, arrival and departure times.
+4. Routed controls.
+5. Composite media player.
+6. Key provisioning (component + fleet).
