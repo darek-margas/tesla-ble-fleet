@@ -1,0 +1,14 @@
+{
+  "domain": "tesla_ble_fleet",
+  "name": "Tesla BLE Fleet",
+  "after_dependencies": ["esphome"],
+  "codeowners": ["@darek-margas"],
+  "config_flow": true,
+  "documentation": "https://github.com/darek-margas/tesla-ble-fleet",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/darek-margas/tesla-ble-fleet/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.0.1"
+}
