@@ -80,7 +80,7 @@ Rule: **one active device per key**. Per-key counters would collide if two devic
 ## Order
 
 1. ~~Component: `car_id` text sensor.~~ Done (esphome-tesla-ble-multi a1e548a).
-2. Fleet: discover ESPHome devices with Car IDs, one fleet device per car. **Parking** done first (0.1.0); mirrored sensors and **Serving ESP32** next.
+2. Fleet: discover ESPHome devices with Car IDs, one fleet device per car. **Parking** done first (0.1.0b1); mirrored sensors and **Serving ESP32** next.
 3. Routed controls.
 4. Composite media player.
 5. Key provisioning (component + fleet).
