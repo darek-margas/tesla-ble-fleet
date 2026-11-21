@@ -1,0 +1,29 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "tesla_outside": {
+        "default": "mdi:car-off",
+        "state": {
+          "on": "mdi:car"
+        }
+      }
+    },
+    "sensor": {
+      "location": {
+        "default": "mdi:car-question",
+        "state": {
+          "in_spot": "mdi:garage-variant",
+          "outside": "mdi:car",
+          "away": "mdi:map-marker-distance",
+          "home": "mdi:home-outline"
+        }
+      },
+      "parking": {
+        "default": "mdi:car-multiple"
+      },
+      "occupant": {
+        "default": "mdi:parking"
+      }
+    }
+  }
+}
