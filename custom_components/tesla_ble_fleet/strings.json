@@ -9,5 +9,84 @@
     "abort": {
       "single_instance_allowed": "Tesla BLE Fleet is already set up."
     }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "Parking spot",
+      "initiate_flow": {
+        "user": "Add parking spot"
+      },
+      "step": {
+        "user": {
+          "title": "Parking spot",
+          "description": "Pick each car's Bluetooth RSSI at this spot (fields named after the cars), e.g. the BLE RSSI sensors of the ESP32 above it. Cars without one can't be identified here.",
+          "data": {
+            "name": "Name",
+            "occupied": "Occupied sensor",
+            "distance": "Distance sensor",
+            "floor_cm": "Floor distance",
+            "min_height_cm": "Smallest car height",
+            "max_height_cm": "Largest car height",
+            "rssi_min": "Weakest RSSI for a car in the spot",
+            "rssi_margin": "RSSI margin between cars"
+          },
+          "data_description": {
+            "occupied": "On while something is in the spot, e.g. the ultrasonic sensor's Car Present.",
+            "distance": "Optional. Measured distance to what's in the spot. Height = floor distance minus this; outside the car-height band it's not a car (ladder, bin, person).",
+            "floor_cm": "What the distance sensor reads with the spot empty.",
+            "rssi_min": "A car heard weaker than this at the spot isn't in it.",
+            "rssi_margin": "The strongest car must beat the next by this much; otherwise the spot waits until it can tell."
+          }
+        },
+        "reconfigure": {
+          "title": "Parking spot",
+          "description": "Pick each car's Bluetooth RSSI at this spot (fields named after the cars), e.g. the BLE RSSI sensors of the ESP32 above it. Cars without one can't be identified here.",
+          "data": {
+            "name": "Name",
+            "occupied": "Occupied sensor",
+            "distance": "Distance sensor",
+            "floor_cm": "Floor distance",
+            "min_height_cm": "Smallest car height",
+            "max_height_cm": "Largest car height",
+            "rssi_min": "Weakest RSSI for a car in the spot",
+            "rssi_margin": "RSSI margin between cars"
+          },
+          "data_description": {
+            "occupied": "On while something is in the spot, e.g. the ultrasonic sensor's Car Present.",
+            "distance": "Optional. Measured distance to what's in the spot. Height = floor distance minus this; outside the car-height band it's not a car (ladder, bin, person).",
+            "floor_cm": "What the distance sensor reads with the spot empty.",
+            "rssi_min": "A car heard weaker than this at the spot isn't in it.",
+            "rssi_margin": "The strongest car must beat the next by this much; otherwise the spot waits until it can tell."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Parking spot updated."
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "tesla_outside": {
+        "name": "Tesla outside"
+      }
+    },
+    "sensor": {
+      "location": {
+        "name": "Location",
+        "state": {
+          "away": "Away",
+          "in_spot": "In spot",
+          "outside": "Outside",
+          "home": "Home, place unclear"
+        }
+      },
+      "parking": {
+        "name": "Parking"
+      },
+      "occupant": {
+        "name": "Occupant"
+      }
+    }
   }
 }

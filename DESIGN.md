@@ -51,6 +51,22 @@ Presence and the car's location are **not built here**. They go into [Wi-Fi Asso
 
 That integration already has the presence logic (grace period, visits, areas, storage across restarts), and a home with one access point but ESP32s in the garage and driveway gets a real location. Building it twice would duplicate that logic. The fleet links to it.
 
+## Parking: in the spot, outside, away
+
+Wi-Fi Association Presence answers home or away, and which area. It can't say whether a car is *in* the garage spot or parked on the driveway outside the door: both are in range of the same ESP32. That needs a sensor over the spot, so it is built here.
+
+A **parking spot** is a config subentry: an occupancy sensor over the space, optionally its distance sensor, and each car's advert RSSI at that spot (e.g. the `ble_rssi` sensors of the ESP32 above it). Two questions are answered separately:
+- **Is it a car?** Height = floor distance − measured distance. Outside the car band (default 135–195 cm) it's a ladder, bin or person. Height doesn't tell two Model Ys apart: the Y L is 4 cm taller than the Y.
+- **Which car?** The strongest advert at the spot, if above the minimum (default −85 dBm) and at least the margin (default 6 dB) ahead of the next car. Closer than that, the spot waits ("not sure which").
+
+Once a car is identified the spot keeps it until it's empty. A parked car doesn't change, and RSSI wobbles: the on-device "Parked Car" sensor flipped between a name and Unknown every few seconds.
+
+Per car, **Location**: In spot (identified in a spot), Outside (Present but in no spot), Away (not Present), or Home with the place unclear (a spot is unavailable or unsure). A car identified in a spot counts as home even if its Present lags.
+
+Fleet-wide: **Parking** ("2 in", "1 in, 1 out", "2 out", "1 out, 1 away") and **Tesla outside** (on while any car is Outside; attribute `cars`). The use that started it: Frigate sees the driveway blocked, and the car on the driveway sounds its horn.
+
+The logic is in `parking.py` with no Home Assistant imports, tested in `tests/test_parking.py`.
+
 ## Keys (later, opt-in)
 
 Key provisioning from Home Assistant, so ESP32s are replaceable:
@@ -64,7 +80,7 @@ Rule: **one active device per key**. Per-key counters would collide if two devic
 ## Order
 
 1. ~~Component: `car_id` text sensor.~~ Done (esphome-tesla-ble-multi a1e548a).
-2. Fleet: discover ESPHome devices with Car IDs, one fleet device per car, mirrored sensors and **Serving ESP32**.
+2. Fleet: discover ESPHome devices with Car IDs, one fleet device per car. **Parking** done first (0.1.0); mirrored sensors and **Serving ESP32** next.
 3. Routed controls.
 4. Composite media player.
 5. Key provisioning (component + fleet).
