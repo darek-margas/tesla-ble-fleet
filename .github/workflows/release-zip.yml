@@ -1,0 +1,41 @@
+name: Release zip
+
+# HACS installs from tesla_ble_fleet.zip ("zip_release" in hacs.json) and counts
+# its downloads in the store. Publishing a release attaches it, built from the
+# release's tag. Run it by hand with a tag for a release that has none. It's
+# uploaded once: replacing it would reset the count.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. v0.1.0b2
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Attach the integration zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        shell: bash
+        run: |
+          ASSET=tesla_ble_fleet.zip
+          if gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$ASSET"; then
+            echo "$ASSET is already on $TAG."
+            exit 0
+          fi
+          rm -rf /tmp/zip && mkdir /tmp/zip
+          git archive "$TAG" custom_components/tesla_ble_fleet | tar -x -C /tmp/zip
+          (cd /tmp/zip/custom_components/tesla_ble_fleet && zip -r -X "/tmp/$ASSET" .)
+          gh release upload "$TAG" "/tmp/$ASSET"
