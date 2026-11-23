@@ -3,6 +3,10 @@
 Pure logic, no Home Assistant imports, so it can be unit tested on its own
 (tests/test_parking.py). The integration feeds it entity states.
 
+The same file is in tesla-ble-fleet and wifi-association-presence: change both.
+Cars are keyed by an opaque id: the fleet uses Car IDs, Wi-Fi Association
+Presence the subentry ids of its tracked devices.
+
 A spot is an occupancy sensor over one parking space (e.g. an ultrasonic
 sensor in the ceiling). Two questions are answered separately:
 - Is the thing in the spot a car? From its height: floor distance minus the
@@ -64,7 +68,7 @@ class SpotTracker:
         distance_cm: float | None,
         rssi: dict[str, float | None],
     ) -> SpotState:
-        """Evaluate the spot. rssi maps Car ID to the RSSI at this spot."""
+        """Evaluate the spot. rssi maps each car's id to its RSSI at this spot."""
         if occupied is None:
             return SpotState(SpotKind.UNKNOWN)
         if not occupied:
@@ -104,14 +108,14 @@ def locate_cars(
     present: dict[str, bool | None],
     spots: dict[str, SpotState],
 ) -> dict[str, CarPlace]:
-    """Place each car. present maps Car ID to the Tesla BLE Present state."""
+    """Place each car. present maps each car's id to whether it is home (None: unknown)."""
     in_spot = {s.car_id: name for name, s in spots.items() if s.kind is SpotKind.CAR}
     unclear = any(s.kind in (SpotKind.UNKNOWN, SpotKind.UNSURE) for s in spots.values())
     places: dict[str, CarPlace] = {}
     for car_id, here in present.items():
         if car_id in in_spot:
-            # Identified in a spot by its own advert: home even if the Tesla
-            # BLE ESP32's Present lags behind.
+            # Identified in a spot by its own advert: home even if the presence
+            # source lags behind (or a sleeping car has left the Wi-Fi).
             places[car_id] = CarPlace(Location.IN_SPOT, in_spot[car_id])
         elif here is None:
             places[car_id] = CarPlace(None)

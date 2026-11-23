@@ -30,6 +30,8 @@ What you get:
 
 A ladder in the empty spot with one car at home reads Not a Tesla, so that car is Outside.
 
+[Wi-Fi Association Presence](https://github.com/darek-margas/wifi-association-presence) 0.13.0b1 has the same parking logic (`parking.py` is one file shared by both). There a car in its spot is also home, in the spot's area, while it sleeps off the Wi-Fi. Set up each spot in one of the two, not both: the two Location sensors would disagree for a few minutes after a car leaves. Which car to honk stays here.
+
 Honk the car on the driveway when Frigate sees it blocked:
 
 ```yaml
