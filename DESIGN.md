@@ -65,7 +65,7 @@ Per car, **Location**: In spot (identified in a spot), Outside (Present but in n
 
 Fleet-wide: **Parking** ("2 in", "1 in, 1 out", "2 out", "1 out, 1 away") and **Tesla outside** (on while any car is Outside; attribute `cars`). The use that started it: Frigate sees the driveway blocked, and the car on the driveway sounds its horn.
 
-The logic is in `parking.py` with no Home Assistant imports, tested in `tests/test_parking.py`. Wi-Fi Association Presence 0.13.0b1 uses the same file and tests for its parking spots ([design note](https://github.com/darek-margas/wifi-association-presence/blob/main/docs/design/parking-spots.md)), where a spot also keeps the car home: change both copies together. The fleet keeps its own for owners without that integration, and keeps **Tesla outside**, which decides which car to honk.
+The logic is in `parking.py` with no Home Assistant imports, tested in `tests/test_parking.py`. Wi-Fi Association Presence 0.13.0 uses the same file and tests for its parking spots ([design note](https://github.com/darek-margas/wifi-association-presence/blob/main/docs/design/parking-spots.md)), where a spot also keeps the car home: change both copies together. The fleet keeps its own for owners without that integration, and keeps **Tesla outside**, which decides which car to honk.
 
 ## Keys (later, opt-in)
 
