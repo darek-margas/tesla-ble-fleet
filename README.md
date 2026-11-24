@@ -1,6 +1,6 @@
 # Tesla BLE Fleet
 
-**Status: 0.1.0b1 (beta), parking only.** Finds the cars and tells, per car, whether it's in a garage spot, outside or away. The rest below is still design.
+**Status: 0.1.0, parking only.** Finds the cars and tells, per car, whether it's in a garage spot, outside or away. The rest below is still design.
 
 A Home Assistant integration that shows **each Tesla once**, however many ESP32s running [esphome-tesla-ble-multi](https://github.com/darek-margas/esphome-tesla-ble-multi) can reach it:
 
@@ -14,7 +14,7 @@ Each ESP32 stays a complete, independent Tesla client: its own key per car, turn
 
 See [DESIGN.md](DESIGN.md) for how it will work and in which order it's built.
 
-## Parking (0.1.0b1)
+## Parking (0.1.0)
 
 What it needs:
 - the cars' **Car ID** and **Present** entities from esphome-tesla-ble-multi (found automatically);
