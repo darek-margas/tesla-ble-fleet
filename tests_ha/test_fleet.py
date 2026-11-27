@@ -6,6 +6,9 @@ Needs pytest-homeassistant-custom-component; run from the repo root:
 
 from __future__ import annotations
 
+import time
+from unittest.mock import patch
+
 import pytest
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
@@ -128,3 +131,52 @@ async def test_spot_subentry_flow(hass, setup):
     sub = next(s for s in entry.subentries.values() if s.title == "Driveway spot")
     assert sub.data["rssi"] == {BLUEY: "sensor.spot_bluey_rssi"}
     assert "Bluey RSSI" not in sub.data
+
+
+async def test_latch_survives_reload_without_adverts(hass, setup):
+    """After a reload the parked car is still in the spot, though no advert is heard yet."""
+    entry, _, _ = setup
+    await hass.async_block_till_done()
+    hass.states.async_set("sensor.spot_bluey_rssi", "unknown")
+    await hass.async_block_till_done()
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _state(hass, f"{BLUEY}_location").state == "in_spot"
+    out = _state(hass, f"{entry.entry_id}_tesla_outside", "binary_sensor")
+    assert out.attributes["cars"] == ["Szarik"]
+
+
+async def test_quick_swap(hass, setup):
+    """Bluey leaves and Szarik takes the spot before the occupancy sensor turns off."""
+    entry, bluey, _ = setup
+    hass.states.async_set("sensor.spot_bluey_rssi", "unknown")
+    hass.states.async_set(bluey, "off")
+    await hass.async_block_till_done()
+    assert _state(hass, f"{BLUEY}_location").state == "in_spot"      # last reading still held
+    later = time.monotonic() + 60
+    with patch("custom_components.tesla_ble_fleet.time.monotonic", return_value=later):
+        hass.states.async_set("sensor.spot_szarik_rssi", "-58")
+        await hass.async_block_till_done()
+    assert _state(hass, f"{SZARIK}_location").state == "in_spot"
+    assert _state(hass, f"{BLUEY}_location").state == "away"
+
+
+async def test_reconfigure_keeps_rssi_of_a_car_that_is_offline(hass, setup):
+    entry, _, _ = setup
+    sid = next(iter(entry.subentries))
+    szarik_id = er.async_get(hass).async_get_entity_id("sensor", "esphome", "Szarik-car_id")
+    hass.states.async_set(szarik_id, "unavailable")
+    result = await entry.start_subentry_reconfigure_flow(hass, sid)
+    assert result["type"] is FlowResultType.FORM
+    keys = {str(k) for k in result["data_schema"].schema}
+    assert "Bluey RSSI" in keys and "Szarik RSSI" not in keys
+    user_input = {
+        "name": "Garage", "occupied": "binary_sensor.spot_car_present",
+        "floor_cm": 280, "min_height_cm": 195, "max_height_cm": 135,
+        "rssi_min": -85, "rssi_margin": 6, "Bluey RSSI": "sensor.spot_bluey_rssi"}
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], user_input)
+    assert result["errors"] == {"base": "height_band"}
+    user_input.update(min_height_cm=135, max_height_cm=195)
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], user_input)
+    assert result["type"] is FlowResultType.ABORT
+    assert entry.subentries[sid].data["rssi"] == SPOT["rssi"]

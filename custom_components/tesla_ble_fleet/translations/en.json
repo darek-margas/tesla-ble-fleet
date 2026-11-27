@@ -62,6 +62,9 @@
       },
       "abort": {
         "reconfigure_successful": "Parking spot updated."
+      },
+      "error": {
+        "height_band": "The smallest car height must be below the largest."
       }
     }
   },

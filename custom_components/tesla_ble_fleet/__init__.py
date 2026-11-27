@@ -11,6 +11,7 @@ Away, plus a summary and a "Tesla outside" sensor (see parking.py).
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 
 from homeassistant.config_entries import ConfigEntry
@@ -18,6 +19,7 @@ from homeassistant.const import CONF_NAME, STATE_OFF, STATE_ON, Platform
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.storage import Store
 
 from .cars import CAR_ID_RE, Car, discover_cars
 from .const import (
@@ -29,6 +31,7 @@ from .const import (
     CONF_RSSI,
     CONF_RSSI_MARGIN,
     CONF_RSSI_MIN,
+    DOMAIN,
     SUBENTRY_SPOT,
     signal_update,
 )
@@ -56,6 +59,8 @@ class Fleet:
     cars: dict[str, Car]
     pending_car_ids: list[str]
     spots: dict[str, Spot]
+    store: Store[dict[str, str]]
+    saved_latches: dict[str, str] = field(default_factory=dict)
     spot_states: dict[str, SpotState] = field(default_factory=dict)
     places: dict[str, CarPlace] = field(default_factory=dict)
 
@@ -70,15 +75,26 @@ class Fleet:
 
     @callback
     def recalculate(self) -> None:
+        present = {
+            car_id: _any_on(self.hass, car.present_entities) for car_id, car in self.cars.items()
+        }
+        now = time.monotonic()
         for sid, spot in self.spots.items():
             self.spot_states[sid] = spot.tracker.update(
                 _bool(self.hass, spot.occupied),
                 _float(self.hass, spot.distance),
                 {car_id: _float(self.hass, ent) for car_id, ent in spot.rssi.items()},
+                present,
+                now,
             )
-        present = {
-            car_id: _any_on(self.hass, car.present_entities) for car_id, car in self.cars.items()
+        latches = {
+            sid: spot.tracker.latched for sid, spot in self.spots.items() if spot.tracker.latched
         }
+        if latches != self.saved_latches:
+            # Kept across restarts and reloads: until the adverts are heard again
+            # a parked car would otherwise read as "Not a Tesla", and so outside.
+            self.saved_latches = latches
+            self.hass.async_create_task(self.store.async_save(latches))
         self.places = locate_cars(present, self.spot_states)      # CarPlace.spot = subentry id
         async_dispatcher_send(self.hass, signal_update(self.entry.entry_id))
 
@@ -131,19 +147,27 @@ def _spots(entry: ConfigEntry) -> dict[str, Spot]:
 async def async_setup_entry(hass: HomeAssistant, entry: FleetConfigEntry) -> bool:
     """Find the cars, set up the spots, follow their entities."""
     cars, pending = discover_cars(hass)
-    fleet = Fleet(hass, entry, cars, pending, _spots(entry))
+    store: Store[dict[str, str]] = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.latches")
+    fleet = Fleet(hass, entry, cars, pending, _spots(entry), store)
+    fleet.saved_latches = {
+        sid: car_id for sid, car_id in (await store.async_load() or {}).items()
+        if sid in fleet.spots
+    }
+    for sid, car_id in fleet.saved_latches.items():
+        fleet.spots[sid].tracker.restore(car_id)
     entry.runtime_data = fleet
-    fleet.recalculate()
-
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     @callback
     def _changed(event: Event[EventStateChangedData]) -> None:
         fleet.recalculate()
 
+    # Listen before the first calculation, so no change falls in between.
     entry.async_on_unload(
         async_track_state_change_event(hass, sorted(fleet.watched_entities()), _changed)
     )
+    fleet.recalculate()
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     if pending:
         # A Car ID without a value yet (its ESP32 isn't connected): reload once
@@ -168,3 +192,8 @@ async def _reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
 async def async_unload_entry(hass: HomeAssistant, entry: FleetConfigEntry) -> bool:
     """Unload the fleet."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Delete the saved latches with the fleet."""
+    await Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.latches").async_remove()
